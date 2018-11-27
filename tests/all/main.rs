@@ -1,3 +1,4 @@
+#![recursion_limit = "256"]
 extern crate env_logger;
 extern crate log;
 extern crate ressa;

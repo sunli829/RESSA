@@ -34,13 +34,17 @@ fn parse_with_statement() {
     let js = "with (Math) {
         floor(PI * random())
         }";
-    let random = Expression::call(Expression::ident("random"), vec![]);
-    let pi = Expression::ident("PI");
+    let math = Identifier::new("Math", SourceLocation::no_source(Position::new(1, 6), Position::new(1, 10)));
+    let floor = Identifier::new("floor", SourceLocation::no_source(Position::new(2, 8), Position::new(2, 13)));
+    let pi = Identifier::new("PI", SourceLocation::no_source(Position::new(2, 14), Position::new(2, 17)));
+    let random = Identifier::new("random", SourceLocation::no_source(Position::new(2, 19), Position::new(2, 25)));
+    let random = Expression::call(Expression::Ident(random), vec![]);
+    let pi = Expression::Ident(pi);
     let bin = Expression::binary(pi, BinaryOperator::Times, random);
-    let floor = Expression::call(Expression::ident("floor"), vec![bin]);
+    let floor = Expression::call(Expression::Ident(floor), vec![bin]);
     let part = ProgramPart::Statement(Statement::Expr(floor));
     let body = Statement::Block(vec![part]);
-    let stmt = Statement::with(Expression::ident("Math"), body);
+    let stmt = Statement::with(Expression::Ident(math), body);
     let part = ProgramPart::Statement(stmt);
     let expectation = Program::script(
         vec![part],
@@ -56,11 +60,13 @@ fn parse_while_stmt() {
         break;
     }";
     let test = Expression::boolean(true);
+    let console = Identifier::new("console", SourceLocation::no_source(Position::new(2, 8), Position::new(2, 15)));
+    let log =  Identifier::new("log", SourceLocation::no_source(Position::new(2, 16), Position::new(2, 19)));
     let bk = Statement::Break(None);
     let log_args = Expression::string("'false'");
     let member = Expression::member(
-        Expression::ident("console"),
-        Expression::ident("log"),
+        Expression::Ident(console),
+        Expression::Ident(log),
         false,
     );
     let call = Expression::call(member, vec![log_args]);
@@ -83,10 +89,14 @@ fn parse_while_stmt_2() {
     while (Math.random() > 0.1) {
         console.log('loop');
     }";
+    let math = Identifier::new("Math", SourceLocation::no_source(Position::new(2, 11), Position::new(2, 15)));
+    let random = Identifier::new("random", SourceLocation::no_source(Position::new(2, 16), Position::new(2, 22)));
+    let console = Identifier::new("console", SourceLocation::no_source(Position::new(3, 8), Position::new(3, 15)));
+    let log = Identifier::new("log", SourceLocation::no_source(Position::new(3, 16), Position::new(3, 19)));
     let math_random = Expression::call(
         Expression::member(
-            Expression::ident("Math"),
-            Expression::ident("random"),
+            Expression::Ident(math),
+            Expression::Ident(random),
             false,
         ),
         vec![],
@@ -99,8 +109,8 @@ fn parse_while_stmt_2() {
     let lp = Expression::string("'loop'");
     let console_log = Expression::call(
         Expression::member(
-            Expression::ident("console"),
-            Expression::ident("log"),
+            Expression::Ident(console),
+            Expression::Ident(log),
             false,
         ),
         vec![lp],
@@ -120,7 +130,7 @@ fn parse_while_stmt_2() {
 #[test]
 fn parse_var_stmt() {
     let js = "var i;";
-    let decl = VariableDecl::uninitialized("i");
+    let decl = VariableDecl::uninitialized("i", SourceLocation::no_source(Position::new(1, 4), Position::new(1, 5)));
     let stmt = Statement::Var(vec![decl]);
     let part = ProgramPart::Statement(stmt);
     let program = Program::script(
@@ -133,7 +143,8 @@ fn parse_var_stmt() {
 #[test]
 fn parse_var_stmt_2() {
     let js = "var i = 0;";
-    let decl = VariableDecl::with_value("i", Expression::number("0"));
+    let i = Identifier::new("i", SourceLocation::no_source(Position::new(1, 4), Position::new(1, 6)));
+    let decl = VariableDecl::with_value(i, Expression::number("0"));
     let stmt = Statement::Var(vec![decl]);
     let part = ProgramPart::Statement(stmt);
     let program = Program::script(
@@ -146,11 +157,13 @@ fn parse_var_stmt_2() {
 #[test]
 fn parse_var_stmt_3() {
     let js = "var a, b, c, d = 22";
+    let a = VariableDecl::uninitialized("a", SourceLocation::no_source(Position::new(1, 4), Position::new(1, 5)));
+    let b = VariableDecl::uninitialized("b", SourceLocation::no_source(Position::new(1, 7), Position::new(1, 8)));
+    let c = VariableDecl::uninitialized("c", SourceLocation::no_source(Position::new(1, 10), Position::new(1, 11)));
+    let d = Identifier::new("d", SourceLocation::no_source(Position::new(1, 13), Position::new(1, 15)));
     let stmt = Statement::Var(vec![
-        VariableDecl::uninitialized("a"),
-        VariableDecl::uninitialized("b"),
-        VariableDecl::uninitialized("c"),
-        VariableDecl::with_value("d", Expression::number("22")),
+        a, b, c,
+        VariableDecl::with_value(d, Expression::number("22")),
     ]);
     let part = ProgramPart::Statement(stmt);
     let program = Program::script(
@@ -165,20 +178,28 @@ fn parse_var_stmt_fn() {
     let js = "var fn = function (one, two) {
         return one + two;
     }";
+    let fn_ident = Identifier::new("fn", SourceLocation::no_source(Position::new(1,4), Position::new(1, 7)));
+    let one = Identifier::new("one", SourceLocation::no_source(Position::new(1,19), Position::new(1, 22)));
+    let two = Identifier::new("two", SourceLocation::no_source(Position::new(1,24), Position::new(1, 27)));
+    let one2 = Identifier::new("one", SourceLocation::no_source(Position::new(2,15), Position::new(2, 19)));
+    let two2 = Identifier::new("two", SourceLocation::no_source(Position::new(2,21), Position::new(2, 24)));
     let addition = Expression::binary(
-        Expression::ident("one"),
+        Expression::Ident(one2),
         BinaryOperator::Plus,
-        Expression::ident("two"),
+        Expression::Ident(two2),
     );
     let body = vec![ProgramPart::Statement(Statement::Return(Some(addition)))];
     let func = Expression::function(
         None,
-        vec![FunctionArg::ident("one"), FunctionArg::ident("two")],
+        vec![
+            FunctionArg::Pattern(Pattern::Identifier(one)),
+            FunctionArg::Pattern(Pattern::Identifier(two)),
+        ],
         body,
         false,
         false,
     );
-    let v = Statement::Var(vec![VariableDecl::with_value("fn", func)]);
+    let v = Statement::Var(vec![VariableDecl::with_value(fn_ident, func)]);
     let part = ProgramPart::Statement(v);
     let program = Program::script(
         vec![part],
@@ -193,15 +214,16 @@ fn parse_var_stmt_fn_2() {
         yield 'one';
         yield 'two';
     }";
-
+    let fn_ident = Identifier::new("fn", SourceLocation::no_source(Position::new(1, 4), Position::new(1, 7)));
+    let x = Identifier::new("x", SourceLocation::no_source(Position::new(1, 19), Position::new(1, 20)));
     let one = Expression::yield_with_arg(Expression::string("'one'"), false);
     let two = Expression::yield_with_arg(Expression::string("'two'"), false);
     let body = vec![
         ProgramPart::Statement(Statement::Expr(one)),
         ProgramPart::Statement(Statement::Expr(two)),
     ];
-    let func = Expression::function(Some("x".to_string()), vec![], body, true, false);
-    let v = Statement::Var(vec![VariableDecl::with_value("fn", func)]);
+    let func = Expression::function(Some(x), vec![], body, true, false);
+    let v = Statement::Var(vec![VariableDecl::with_value(fn_ident, func)]);
     let part = ProgramPart::Statement(v);
     let program = Program::script(
         vec![part],
@@ -213,12 +235,18 @@ fn parse_var_stmt_fn_2() {
 #[test]
 fn parse_var_stmt_destructure() {
     let js = "var {a, b, c} = {a: 0, b: 1, c: 2}";
+    let a = Identifier::new("a", SourceLocation::no_source(Position::new(1, 5), Position::new(1, 6)));
+    let a2 = Identifier::new("a", SourceLocation::no_source(Position::new(1, 17), Position::new(1, 18)));
+    let b = Identifier::new("b", SourceLocation::no_source(Position::new(1, 8), Position::new(1, 9)));
+    let b2 = Identifier::new("b", SourceLocation::no_source(Position::new(1, 23), Position::new(1, 24)));
+    let c = Identifier::new("c", SourceLocation::no_source(Position::new(1, 11), Position::new(1, 12)));
+    let c2 = Identifier::new("c", SourceLocation::no_source(Position::new(1, 29), Position::new(1, 30)));
     let init = vec![
-        ObjectProperty::number("a", "0"),
-        ObjectProperty::number("b", "1"),
-        ObjectProperty::number("c", "2"),
+        ObjectProperty::number(a2, "0"),
+        ObjectProperty::number(b2, "1"),
+        ObjectProperty::number(c2, "2"),
     ];
-    let decl = VariableDecl::destructed(&["a", "b", "c"], init);
+    let decl = VariableDecl::destructed(vec![a, b, c], init);
     let stmt = Statement::Var(vec![decl]);
     let program = Program::script(
         vec![ProgramPart::Statement(stmt)],
@@ -230,14 +258,23 @@ fn parse_var_stmt_destructure() {
 #[test]
 fn parse_var_stmt_destructure_rest() {
     let js = "var {a, b, c, ...arg} = {a: 0, b: 1, c: 2, d: 3, e: 4}";
+    let a = Identifier::new("a", SourceLocation::no_source(Position::new(1, 5), Position::new(1, 6)));
+    let a2 = Identifier::new("a", SourceLocation::no_source(Position::new(1, 25), Position::new(1, 26)));
+    let b = Identifier::new("b", SourceLocation::no_source(Position::new(1, 8), Position::new(1, 9)));
+    let b2 = Identifier::new("b", SourceLocation::no_source(Position::new(1, 31), Position::new(1, 32)));
+    let c = Identifier::new("c", SourceLocation::no_source(Position::new(1, 11), Position::new(1, 12)));
+    let c2 = Identifier::new("c", SourceLocation::no_source(Position::new(1, 37), Position::new(1, 38)));
+    let d = Identifier::new("d", SourceLocation::no_source(Position::new(1, 43), Position::new(1, 44)));
+    let e = Identifier::new("e", SourceLocation::no_source(Position::new(1, 49), Position::new(1, 50)));
+    let arg = Identifier::new("arg", SourceLocation::no_source(Position::new(1, 17), Position::new(1, 20)));
     let init = vec![
-        ObjectProperty::number("a", "0"),
-        ObjectProperty::number("b", "1"),
-        ObjectProperty::number("c", "2"),
-        ObjectProperty::number("d", "3"),
-        ObjectProperty::number("e", "4"),
+        ObjectProperty::number(a2, "0"),
+        ObjectProperty::number(b2, "1"),
+        ObjectProperty::number(c2, "2"),
+        ObjectProperty::number(d, "3"),
+        ObjectProperty::number(e, "4"),
     ];
-    let decl = VariableDecl::destructed_with_rest(&["a", "b", "c"], "arg", init);
+    let decl = VariableDecl::destructed_with_rest(vec![a, b, c], arg, init);
     let stmt = Statement::Var(vec![decl]);
     let program = Program::script(
         vec![ProgramPart::Statement(stmt)],
@@ -269,10 +306,11 @@ fn parse_try_stmt_2() {
 #[test]
 fn parse_labeled_stmt_lf() {
     let js = "linefeed:0\n0;";
+    let lf = Identifier::new("linefeed", SourceLocation::no_source(Position::new(1, 0), Position::new(1, 8)));
     let program = Program::script(
         vec![
             ProgramPart::Statement(Statement::Labeled(LabeledStatement {
-                label: "linefeed".to_string(),
+                label: lf,
                 body: Box::new(Statement::Expr(Expression::number("0"))),
             })),
             ProgramPart::Statement(Statement::Expr(Expression::number("0"))),
@@ -354,11 +392,13 @@ fn parse_delete_comma_op() {
 fn doc_snippet() {
     let js = "function helloWorld() { alert('Hello world'); }";
     let p = Parser::new(&js).unwrap();
+    let hw = Identifier::new("helloWorld", SourceLocation::no_source(Position::new(1, 9), Position::new(1, 19)));
+    let alert = Identifier::new("alert", SourceLocation::no_source(Position::new(1, 24), Position::new(1, 29)));
     let f = ProgramPart::decl(Declaration::Function(Function {
-        id: Some("helloWorld".to_string()),
+        id: Some(hw),
         params: vec![],
         body: vec![ProgramPart::Statement(Statement::Expr(Expression::call(
-            Expression::ident("alert"),
+            Expression::Ident(alert),
             vec![Expression::string("'Hello world'")],
         )))],
         generator: false,
@@ -375,48 +415,57 @@ fn builder_doc_snippet() {
     let js = "for (var i = 0; i < 100; i++) {
         console.log('loop', i);
         }";
-    let p = Builder::new().module(false).js(js).build().unwrap();
-    for part in p {
-        let expectation = ProgramPart::Statement(Statement::For(ForStatement {
-            init: Some(LoopInit::Variable(vec![VariableDecl::with_value(
-                "i",
-                Expression::number("0"),
-            )])),
-            test: Some(Expression::binary(
-                Expression::ident("i"),
-                BinaryOperator::LessThan,
-                Expression::number("100"),
+    let i = Identifier::new("i", SourceLocation::no_source(Position::new(1, 9), Position::new(1, 11)));
+    let i2 = Identifier::new("i", SourceLocation::no_source(Position::new(1, 16), Position::new(1, 18)));
+    let i3 = Identifier::new("i", SourceLocation::no_source(Position::new(1, 25), Position::new(1, 26)));
+    let console = Identifier::new("console", SourceLocation::no_source(Position::new(2, 8), Position::new(2, 15)));
+    let log = Identifier::new("log", SourceLocation::no_source(Position::new(2, 16), Position::new(2, 19)));
+    let i4 = Identifier::new("i", SourceLocation::no_source(Position::new(2, 28), Position::new(2, 29)));
+    let mut p = Builder::new().module(false).js(js).build().unwrap();
+    let part = p.next().unwrap().unwrap();
+    let expectation = ProgramPart::Statement(Statement::For(ForStatement {
+        init: Some(LoopInit::Variable(vec![VariableDecl::with_value(
+            i,
+            Expression::number("0"),
+        )])),
+        test: Some(Expression::binary(
+            Expression::Ident(i2),
+            BinaryOperator::LessThan,
+            Expression::number("100"),
+        )),
+        update: Some(Expression::Update(UpdateExpression {
+            operator: UpdateOperator::Increment,
+            argument: Box::new(Expression::Ident(i3)),
+            prefix: false,
+        })),
+        body: Box::new(Statement::Block(vec![ProgramPart::Statement(
+            Statement::Expr(Expression::call(
+                Expression::member(
+                    Expression::Ident(console),
+                    Expression::Ident(log),
+                    false,
+                ),
+                vec![
+                    Expression::string("'loop'"),
+                    Expression::Ident(i4)
+                ],
             )),
-            update: Some(Expression::Update(UpdateExpression {
-                operator: UpdateOperator::Increment,
-                argument: Box::new(Expression::ident("i")),
-                prefix: false,
-            })),
-            body: Box::new(Statement::Block(vec![ProgramPart::Statement(
-                Statement::Expr(Expression::call(
-                    Expression::member(
-                        Expression::ident("console"),
-                        Expression::ident("log"),
-                        false,
-                    ),
-                    vec![Expression::string("'loop'"), Expression::ident("i")],
-                )),
-            )])),
-        }));
-        assert_eq!(part.unwrap(), expectation);
-    }
+        )])),
+    }));
+    assert_eq!(part, expectation);
 }
 
 #[test]
 fn parse_doc_example() {
     let js = "function helloWorld() { alert('Hello world'); }";
     let mut p = Parser::new(&js).unwrap();
+    let hw = Identifier::new("helloWorld", SourceLocation::no_source(Position::new(1, 9), Position::new(1, 19)));
     let expectation = Program::script(
         vec![ProgramPart::decl(Declaration::Function(Function {
-            id: Some("helloWorld".to_string()),
+            id: Some(hw),
             params: vec![],
             body: vec![ProgramPart::Statement(Statement::Expr(Expression::call(
-                Expression::ident("alert"),
+                Expression::ident("alert", SourceLocation::no_source(Position::new(1, 24), Position::new(1, 29))),
                 vec![Expression::string("'Hello world'")],
             )))],
             generator: false,
@@ -442,7 +491,7 @@ function Thing() {
             ProgramPart::Decl(decl) => match decl {
                 Declaration::Function(f) => {
                     if let Some(ref id) = f.id {
-                        assert_eq!(id, "Thing");
+                        assert_eq!(id.name, "Thing");
                     }
                     assert!(f.params.len() == 0);
                     assert!(!f.generator);

@@ -1,3 +1,5 @@
+#![allow(unused)]
+//! Unfinished example
 extern crate ress;
 extern crate ressa;
 use ress::{Comment, CommentKind, Item, Token};

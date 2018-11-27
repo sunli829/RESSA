@@ -32,7 +32,7 @@ function Thing() {
             ProgramPart::Decl(decl) => match decl {
                 Declaration::Function(f) => {
                     if let Some(ref id) = f.id {
-                        assert_eq!(id, "Thing");
+                        assert_eq!(id.name, "Thing");
                     }
                     assert!(f.params.len() == 0);
                     assert!(!f.generator);
@@ -44,20 +44,22 @@ function Thing() {
                                     if let Some(expr) = expr {
                                         match expr {
                                             Expression::Literal(lit) => match lit {
-                                                Literal::String(value) => assert_eq!(value, String::from("'stuff'")),
-                                                _ => ()
+                                                Literal::String(value) => {
+                                                    assert_eq!(value, String::from("'stuff'"))
+                                                }
+                                                _ => (),
                                             },
-                                            _ => ()
+                                            _ => (),
                                         }
                                     }
-                                },
+                                }
                                 _ => (),
                             },
-                            _ => ()
+                            _ => (),
                         }
                     }
-                },
-                _ => ()
+                }
+                _ => (),
             },
             _ => (),
         }

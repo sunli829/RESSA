@@ -19,29 +19,25 @@
 //! };
 //! fn main() {
 //!    let js = "function helloWorld() { alert('Hello world'); }";
-//!    let p = Parser::new(&js).unwrap();
-//!    let f = ProgramPart::decl(
-//!        Declaration::Function(
-//!            Function {
-//!                id: Some("helloWorld".to_string()),
-//!                params: vec![],
-//!                body: vec![
-//!                    ProgramPart::Statement(
-//!                        Statement::Expr(
-//!                            Expression::call(Expression::ident("alert"), vec![Expression::string("'Hello world'")])
-//!                        )
-//!                    )
-//!                ],
-//!                generator: false,
-//!                is_async: false,
-//!            }
-//!        )
+//!    let mut p = Parser::new(&js).unwrap();
+//!    let hw = Identifier::new("helloWorld", SourceLocation::no_source(Position::new(1, 9), Position::new(1, 19)));
+//!    let expectation = Program::script(
+//!        vec![ProgramPart::decl(Declaration::Function(Function {
+//!            id: Some(hw),
+//!            params: vec![],
+//!            body: vec![ProgramPart::Statement(Statement::Expr(Expression::call(
+//!                Expression::ident("alert", SourceLocation::no_source(Position::new(1, 24), Position::new(1, 29))),
+//!                vec![Expression::string("'Hello world'")],
+//!            )))],
+//!            generator: false,
+//!            is_async: false,
+//!        }))],
+//!        SourceLocation::no_source(Position::new(1, 0), Position::new(1, js.len())),
 //!    );
-//!    for part in p {
-//!        assert_eq!(part.unwrap(), f);
-//!    }
-//! }
-//!```
+//!    let program = p.parse().unwrap();
+//!    assert_eq!(program, expectation);
+//!}
+//! ```
 //! checkout the `examples` folders for slightly larger
 //! examples.
 //!
@@ -153,52 +149,46 @@ impl Default for Context {
 /// use ressa::node::*;
 /// fn main() {
 ///     let js = "for (var i = 0; i < 100; i++) {
-///         console.log('loop', i);
-///         }";
-///     let p = Builder::new()
-///                     .module(false)
-///                     .js(js)
-///                     .build()
-///                     .unwrap();
-///     for part in p {
-///         let expectation = ProgramPart::Statement(
-///             Statement::For(
-///                 ForStatement {
-///                     init: Some(
-///                         LoopInit::Variable(
-///                             vec![VariableDecl::with_value("i", Expression::number("0"))]
-///                         )
-///                     ),
-///                     test: Some(
-///                         Expression::binary(Expression::ident("i"), BinaryOperator::LessThan, Expression::number("100"))
-///                     ),
-///                     update: Some(
-///                         Expression::Update(
-///                             UpdateExpression {
-///                                 operator: UpdateOperator::Increment,
-///                                 argument: Box::new(Expression::ident("i")),
-///                                 prefix: false,
-///                             }
-///                         )
-///                     ),
-///                     body:
-///                         Box::new(Statement::Block(
-///                             vec![ProgramPart::Statement(
-///                                 Statement::Expr(
-///                                     Expression::call(Expression::member(Expression::ident("console"), Expression::ident("log"), false),
-///                                     vec![
-///                                         Expression::string("'loop'"),
-///                                         Expression::ident("i"),
-///                                     ])
-///                                 )
-///                             )]
-///                         )
-///                     )
-///                 }
-///             )
-///         );
-///         assert_eq!(part.unwrap(), expectation);
-///     }
+///        console.log('loop', i);
+///        }";
+///    let i = Identifier::new("i", SourceLocation::no_source(Position::new(1, 9), Position::new(1, 11)));
+///    let i2 = Identifier::new("i", SourceLocation::no_source(Position::new(1, 16), Position::new(1, 18)));
+///    let i3 = Identifier::new("i", SourceLocation::no_source(Position::new(1, 25), Position::new(1, 26)));
+///    let console = Identifier::new("console", SourceLocation::no_source(Position::new(2, 7), Position::new(2, 14)));
+///    let log = Identifier::new("log", SourceLocation::no_source(Position::new(2, 15), Position::new(2, 18)));
+///    let i4 = Identifier::new("i", SourceLocation::no_source(Position::new(2, 27), Position::new(2, 28)));
+///    let mut p = Builder::new().module(false).js(js).build().unwrap();
+///    let part = p.next().unwrap().unwrap();
+///    let expectation = ProgramPart::Statement(Statement::For(ForStatement {
+///        init: Some(LoopInit::Variable(vec![VariableDecl::with_value(
+///            i,
+///            Expression::number("0"),
+///        )])),
+///        test: Some(Expression::binary(
+///            Expression::Ident(i2),
+///            BinaryOperator::LessThan,
+///            Expression::number("100"),
+///        )),
+///        update: Some(Expression::Update(UpdateExpression {
+///            operator: UpdateOperator::Increment,
+///            argument: Box::new(Expression::Ident(i3)),
+///            prefix: false,
+///        })),
+///        body: Box::new(Statement::Block(vec![ProgramPart::Statement(
+///            Statement::Expr(Expression::call(
+///                Expression::member(
+///                    Expression::Ident(console),
+///                    Expression::Ident(log),
+///                    false,
+///                ),
+///                vec![
+///                    Expression::string("'loop'"),
+///                    Expression::Ident(i4)
+///                ],
+///            )),
+///        )])),
+///    }));
+///    assert_eq!(part, expectation);
 /// }
 /// ```
 pub struct Builder {
@@ -466,28 +456,23 @@ where
     /// };
     /// fn main() {
     ///     let js = "function helloWorld() { alert('Hello world'); }";
-    ///     let mut p = Parser::new(&js).unwrap();
-    ///     let expectation = Program::script(vec![
-    ///         ProgramPart::decl(
-    ///         Declaration::Function(
-    ///             Function {
-    ///                 id: Some("helloWorld".to_string()),
-    ///                 params: vec![],
-    ///                 body: vec![
-    ///                     ProgramPart::Statement(
-    ///                         Statement::Expr(
-    ///                             Expression::call(Expression::ident("alert"), vec![Expression::string("'Hello world'")])
-    ///                         )
-    ///                     )
-    ///                 ],
-    ///                 generator: false,
-    ///                 is_async: false,
-    ///             }
-    ///         )
-    ///     )
-    ///     ], SourceLocation::no_source(Position::new(1, 0), Position::new(1, js.len())));
-    ///     let program = p.parse().unwrap();
-    ///     assert_eq!(program, expectation);
+    /// let mut p = Parser::new(&js).unwrap();
+    /// let hw = Identifier::new("helloWorld", SourceLocation::no_source(Position::new(1, 9), Position::new(1, 19)));
+    /// let expectation = Program::script(
+    ///     vec![ProgramPart::decl(Declaration::Function(Function {
+    ///         id: Some(hw),
+    ///         params: vec![],
+    ///         body: vec![ProgramPart::Statement(Statement::Expr(Expression::call(
+    ///             Expression::ident("alert", SourceLocation::no_source(Position::new(1, 24), Position::new(1, 29))),
+    ///             vec![Expression::string("'Hello world'")],
+    ///         )))],
+    ///         generator: false,
+    ///         is_async: false,
+    ///     }))],
+    ///     SourceLocation::no_source(Position::new(1, 0), Position::new(1, js.len())),
+    /// );
+    /// let program = p.parse().unwrap();
+    /// assert_eq!(program, expectation);
     /// }
     /// ```
     pub fn parse(&mut self) -> Res<Program> {
@@ -1259,6 +1244,7 @@ where
                 return Ok(node::Statement::For(stmt));
             }
         } else if self.at_keyword(Keyword::Const) || self.at_keyword(Keyword::Let) {
+            let kind_start = self.current_position;
             let kind = self.next_item()?;
             let kind = match &kind.token {
                 Token::Keyword(ref k) => match k {
@@ -1269,10 +1255,12 @@ where
                 _ => return self.expected_token_error(&kind, &["const", "let"]),
             };
             if !self.context.strict && self.look_ahead.token.matches_keyword(Keyword::In) {
+                let kind_end = self.current_position;
                 let _in = self.next_item()?;
+                let id = Identifier {name: kind.to_string(), loc: SourceLocation::no_source(kind_start, kind_end) };
                 //const or let becomes an ident
                 let left = node::LoopLeft::Variable(node::VariableDecl {
-                    id: node::Pattern::Identifier(kind.to_string()),
+                    id: node::Pattern::Identifier(id),
                     init: None,
                 });
                 let right = self.parse_expression()?;
@@ -1468,7 +1456,7 @@ where
         self.expect_keyword(k)?;
         let ret = if self.look_ahead.token.is_ident() && !self.context.has_line_term {
             let id = self.parse_var_ident(false)?;
-            if !self.context.label_set.contains(&id) {
+            if !self.context.label_set.contains(&id.name) {
                 //error: unknown label
             }
             Some(id)
@@ -1500,8 +1488,8 @@ where
                 return Err(self.reinterpret_error("expression", "ident"));
             };
 
-            if !self.context.label_set.insert(format!("${}", &id)) {
-                return Err(self.redecl_error(&id));
+            if !self.context.label_set.insert(format!("${}", &id.name)) {
+                return Err(self.redecl_error(&id.name));
             }
             let body = if self.at_keyword(Keyword::Class) {
                 let class = self.next_item()?;
@@ -1523,7 +1511,7 @@ where
             } else {
                 self.parse_statement()?
             };
-            self.context.label_set.remove(&format!("${}", &id));
+            self.context.label_set.remove(&format!("${}", &id.name));
             Ok(node::Statement::Labeled(node::LabeledStatement {
                 label: id,
                 body: Box::new(body),
@@ -2138,7 +2126,8 @@ where
     }
 
     fn parse_object_property_key(&mut self) -> Res<node::PropertyKey> {
-        debug!("parse_object_property_key");
+        debug!(target: "resp:debug", "parse_object_property_key {}", self.context.allow_yield);
+        let start = self.current_position;
         let item = self.next_item()?;
         if item.token.is_string() || item.token.is_numeric() {
             if item.token.is_oct_literal() {
@@ -2152,7 +2141,7 @@ where
             || item.token.is_null()
             || item.token.is_keyword()
         {
-            let id = item.token.to_string();
+            let id = Identifier { name: item.token.to_string(), loc: SourceLocation::no_source(start, self.current_position) };
             Ok(node::PropertyKey::Ident(id))
         } else if item.token.matches_punct(Punct::OpenBracket) {
             let (prev_bind, prev_assign, prev_first) = self.isolate_cover_grammar();
@@ -2202,8 +2191,10 @@ where
             if self.at_async_function() {
                 self.parse_function_expr()
             } else {
+                let start = self.current_position;
                 let ident = self.next_item()?;
-                Ok(node::Expression::Ident(ident.token.to_string()))
+                let ident = Identifier { name: ident.token.to_string(), loc: SourceLocation::no_source(start, self.current_position)};
+                Ok(node::Expression::Ident(ident))
             }
         } else if self.look_ahead.token.is_numeric() || self.look_ahead.token.is_string() {
             if self.context.strict && self.look_ahead.token.is_oct_literal() {
@@ -2461,7 +2452,7 @@ where
         let start = self.look_ahead.clone();
         let mut has_proto = has_proto;
         let (key, is_async, computed) = if let Token::Ident(ref id) = start.token {
-            let mut id = id.clone();
+            let id_start = self.current_position;
             let _ = self.next_item()?;
             let computed = self.at_punct(Punct::OpenBracket);
             let is_async = self.context.has_line_term
@@ -2472,7 +2463,8 @@ where
             let key = if is_async {
                 self.parse_object_property_key()?
             } else {
-                node::PropertyKey::Ident(id.to_string())
+                let id = Identifier { name: id.to_string(), loc: SourceLocation::no_source(id_start, self.current_position) };
+                node::PropertyKey::Ident(id)
             };
             (Some(key), is_async, computed)
         } else if self.at_punct(Punct::Asterisk) {
@@ -2702,20 +2694,24 @@ where
         }
     }
 
-    fn parse_ident_name(&mut self) -> Res<node::Identifier> {
-        debug!("parse_ident_name");
+    fn parse_ident_name(&mut self) -> Res<Identifier> {
+        debug!(target: "resp:debug", "parse_ident_name {}", self.context.allow_yield);
+        let ident_start = self.current_position;
         let ident = self.next_item()?;
-        match ident.token {
-            Token::Ident(i) => Ok(i.to_string()),
-            Token::Keyword(k) => Ok(k.to_string()),
-            Token::Boolean(b) => Ok(b.into()),
-            Token::Null => Ok("null".to_string()),
-            _ => self.expected_token_error(&ident, &["identifier name"]),
-        }
+        let name = match ident.token {
+            Token::Ident(i) => i.to_string(),
+            Token::Keyword(k) => k.to_string(),
+            Token::Boolean(b) => b.to_string(),
+            Token::Null => "null".to_string(),
+            _ => return self.expected_token_error(&ident, &["identifier name"]),
+        };
+        let ident = Identifier { name, loc: SourceLocation::no_source(ident_start, self.current_position) };
+        Ok(ident)
     }
 
     fn parse_var_ident(&mut self, is_var: bool) -> Res<node::Identifier> {
-        debug!("parse_var_ident");
+        debug!(target: "resp:debug", "parse_var_ident {}", self.context.allow_yield);
+        let ident_start = self.current_position;
         let ident = self.next_item()?;
         if ident.token.matches_keyword(Keyword::Yield) {
             if self.context.strict || !self.context.allow_yield {
@@ -2734,8 +2730,14 @@ where
             return self.expected_token_error(&ident, &["variable identifier"]);
         }
         match &ident.token {
-            &Token::Ident(ref i) => Ok(i.to_string()),
-            &Token::Keyword(ref k) => Ok(k.to_string()),
+            &Token::Ident(ref i) => Ok(Identifier {
+                name: i.to_string(),
+                loc: SourceLocation::no_source(ident_start, self.current_position)
+            }),
+            &Token::Keyword(ref k) => Ok(Identifier {
+                name: k.to_string(),
+                loc: SourceLocation::no_source(ident_start, self.current_position)
+            }),
             _ => self.expected_token_error(&ident, &["variable identifier"]),
         }
     }
@@ -2852,7 +2854,7 @@ where
                 false
             };
             let ident = self.parse_var_ident(is_var)?;
-            let restricted = &ident == "eval" || &ident == "arguments";
+            let restricted = &ident.name == "eval" || &ident.name == "arguments";
             params.push(self.look_ahead.clone());
             Ok((restricted, node::Pattern::Identifier(ident)))
         }
@@ -3025,16 +3027,16 @@ where
                     }
                     if self.context.strict && current.is_ident() {
                         if let node::Expression::Ident(ref i) = current {
-                            if Self::is_restricted_word(i) {
+                            if Self::is_restricted_word(&i.name) {
                                 return self.expected_token_error(
                                     &self.look_ahead,
-                                    &[&format!("not {}", i)],
+                                    &[&format!("not {}", i.name)],
                                 );
                             }
-                            if Self::is_strict_reserved(i) {
+                            if Self::is_strict_reserved(&i.name) {
                                 return self.expected_token_error(
                                     &self.look_ahead,
-                                    &[&format!("not {}", i)],
+                                    &[&format!("not {}", i.name)],
                                 );
                             }
                         }
@@ -3109,7 +3111,7 @@ where
                                     invalid_param = true;
                                 } else {
                                     return node::FunctionArg::Pattern(node::Pattern::Identifier(
-                                        "yield".to_owned(),
+                                        Identifier::new("yield", SourceLocation::no_source(Position::start(), Position::start())),//y.loc),
                                     ));
                                 },
                                 _ => (),
@@ -3121,8 +3123,9 @@ where
                                 node::Expression::Yield(ref y) => if y.argument.is_some() {
                                     invalid_param = true;
                                 } else {
-                                    return node::FunctionArg::Expr(node::Expression::Ident(
-                                        "yield".to_owned(),
+                                    return node::FunctionArg::Expr(
+                                        node::Expression::Ident(
+                                        Identifier::new("yield", SourceLocation::no_source(Position::start(), Position::start())),//y.loc),
                                     ));
                                 },
                                 _ => (),
@@ -3207,7 +3210,7 @@ where
                 };
                 Ok(node::Pattern::Assignment(ret))
             }
-            node::Expression::Ident(i) => Ok(node::Pattern::Identifier(i.to_string())),
+            node::Expression::Ident(i) => Ok(node::Pattern::Identifier(i)),
             _ => Err(self.reinterpret_error("expression", "pattern")),
         }
     }
@@ -3452,7 +3455,7 @@ where
             self.set_inherit_cover_grammar_state(prev_bind, prev_assign, prev_first);
             if self.context.strict && ex.is_ident() {
                 match &ex {
-                    &node::Expression::Ident(ref i) => if Self::is_restricted_word(i) {
+                    &node::Expression::Ident(ref i) => if Self::is_restricted_word(&i.name) {
                         // TODO: double check this
                         if !self.config.tolerant {
                             return self.unexpected_token_error(&start, "restricted ident");
@@ -3482,7 +3485,7 @@ where
                 if self.at_punct(Punct::Increment) || self.at_punct(Punct::Decrement) {
                     if self.context.strict {
                         match &expr {
-                            &node::Expression::Ident(ref i) => if Self::is_restricted_word(i) {
+                            &node::Expression::Ident(ref i) => if Self::is_restricted_word(&i.name) {
                                 return self.expected_token_error(&start, &[]);
                             },
                             _ => (),
@@ -3766,16 +3769,20 @@ where
     /// or `new.target`. The later is only valid in a function
     /// body
     fn parse_new_expr(&mut self) -> Res<node::Expression> {
-        debug!("parse_new_expr");
+        debug!(target: "resp:debug", "parse_new_expr {}", self.context.allow_yield);
+        let start = self.current_position;
         self.expect_keyword(Keyword::New)?;
+        let new_end = self.current_position;
         if self.at_punct(Punct::Period) {
+
             let _ = self.next_item()?;
             if self.look_ahead.token.matches_ident_str("target") && self.context.in_function_body {
                 let property = self.parse_ident_name()?;
-                Ok(node::Expression::MetaProperty(node::MetaProperty {
-                    meta: String::from("new"),
-                    property,
-                }))
+                let meta = MetaProperty::new(
+                    Identifier::new("new", SourceLocation::no_source(start, new_end)),
+                    property
+                );
+                Ok(node::Expression::MetaProperty(meta))
             } else {
                 self.expected_token_error(&self.look_ahead, &["[constructor function call]"])
             }
