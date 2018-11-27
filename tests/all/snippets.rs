@@ -7,16 +7,16 @@ use ressa::Parser;
 #[test]
 fn parse_directive_prologues() {
     let js = "'use strict'";
-    let expectation = Program::Script(vec![ProgramPart::use_strict(false)]);
+    let expectation = Program::script(vec![ProgramPart::use_strict(false)], SourceLocation::no_source(Position::new(1, 0), Position::new(1, 12)));
     execute(js, expectation);
     let js = r#""use strict";"#;
-    let expectation = Program::Script(vec![ProgramPart::use_strict(true)]);
+    let expectation = Program::script(vec![ProgramPart::use_strict(true)], SourceLocation::no_source(Position::new(1, 0), Position::new(1,13)));
     execute(js, expectation);
     let js = "'use strict';\n'use strict';";
-    let expectation = Program::Script(vec![
+    let expectation = Program::script(vec![
         ProgramPart::use_strict(false),
         ProgramPart::use_strict(false),
-    ]);
+    ], SourceLocation::no_source(Position::new(1, 0), Position::new(2, 13)));
     execute(js, expectation);
 }
 
@@ -33,7 +33,7 @@ fn parse_with_statement() {
     let body = Statement::Block(vec![part]);
     let stmt = Statement::with(Expression::ident("Math"), body);
     let part = ProgramPart::Statement(stmt);
-    let expectation = Program::Script(vec![part]);
+    let expectation = Program::script(vec![part], SourceLocation::no_source(Position::new(1,0), Position::new(3, 9)));
     execute(js, expectation);
 }
 
@@ -58,7 +58,7 @@ fn parse_while_stmt() {
     let body = Statement::Block(vec![part, part2]);
     let stmt = Statement::while_stmt(test, body);
     let part = ProgramPart::Statement(stmt);
-    let expectation = Program::Script(vec![part]);
+    let expectation = Program::script(vec![part], SourceLocation::no_source(Position::new(1, 0), Position::new(4, 5)));
     execute(js, expectation);
 }
 
@@ -93,7 +93,7 @@ fn parse_while_stmt_2() {
     let body = Statement::Block(vec![ProgramPart::Statement(Statement::Expr(console_log))]);
     let while_loop = Statement::while_stmt(test, body);
     let part = ProgramPart::Statement(while_loop);
-    execute(js, Program::Script(vec![part]));
+    execute(js, Program::script(vec![part], SourceLocation::no_source(Position::new(2, 4), Position::new(4, 5))));
 }
 
 #[test]
@@ -102,7 +102,7 @@ fn parse_var_stmt() {
     let decl = VariableDecl::uninitialized("i");
     let stmt = Statement::Var(vec![decl]);
     let part = ProgramPart::Statement(stmt);
-    let program = Program::Script(vec![part]);
+    let program = Program::script(vec![part], SourceLocation::no_source(Position::new(1, 0), Position::new(1, 6)));
     execute(js, program);
 }
 
@@ -112,7 +112,7 @@ fn parse_var_stmt_2() {
     let decl = VariableDecl::with_value("i", Expression::number("0"));
     let stmt = Statement::Var(vec![decl]);
     let part = ProgramPart::Statement(stmt);
-    let program = Program::Script(vec![part]);
+    let program = Program::script(vec![part], SourceLocation::no_source(Position::new(1, 0), Position::new(1, 10)));
     execute(js, program);
 }
 
@@ -126,7 +126,7 @@ fn parse_var_stmt_3() {
         VariableDecl::with_value("d", Expression::number("22")),
     ]);
     let part = ProgramPart::Statement(stmt);
-    let program = Program::Script(vec![part]);
+    let program = Program::script(vec![part], SourceLocation::no_source(Position::new(1, 0), Position::new(1, 19)));
     execute(js, program);
 }
 
@@ -134,7 +134,7 @@ fn parse_var_stmt_3() {
 fn parse_var_stmt_fn() {
     let js = "var fn = function (one, two) {
         return one + two;
-        }";
+    }";
     let addition = Expression::binary(
         Expression::ident("one"),
         BinaryOperator::Plus,
@@ -150,7 +150,7 @@ fn parse_var_stmt_fn() {
     );
     let v = Statement::Var(vec![VariableDecl::with_value("fn", func)]);
     let part = ProgramPart::Statement(v);
-    let program = Program::Script(vec![part]);
+    let program = Program::script(vec![part], SourceLocation::no_source(Position::new(1, 0), Position::new(3, 5)));
     execute(js, program);
 }
 
@@ -170,7 +170,7 @@ fn parse_var_stmt_fn_2() {
     let func = Expression::function(Some("x".to_string()), vec![], body, true, false);
     let v = Statement::Var(vec![VariableDecl::with_value("fn", func)]);
     let part = ProgramPart::Statement(v);
-    let program = Program::Script(vec![part]);
+    let program = Program::script(vec![part], SourceLocation::no_source(Position::new(1, 0), Position::new(4, 5)));
     execute(js, program);
 }
 
@@ -184,7 +184,7 @@ fn parse_var_stmt_destructure() {
     ];
     let decl = VariableDecl::destructed(&["a", "b", "c"], init);
     let stmt = Statement::Var(vec![decl]);
-    let program = Program::Script(vec![ProgramPart::Statement(stmt)]);
+    let program = Program::script(vec![ProgramPart::Statement(stmt)], SourceLocation::no_source(Position::new(1, 0), Position::new(1, 34)));
     execute(js, program);
 }
 
@@ -200,7 +200,7 @@ fn parse_var_stmt_destructure_rest() {
     ];
     let decl = VariableDecl::destructed_with_rest(&["a", "b", "c"], "arg", init);
     let stmt = Statement::Var(vec![decl]);
-    let program = Program::Script(vec![ProgramPart::Statement(stmt)]);
+    let program = Program::script(vec![ProgramPart::Statement(stmt)], SourceLocation::no_source(Position::new(1, 0), Position::new(1, js.len())));
     execute(js, program);
 }
 
@@ -227,13 +227,13 @@ fn parse_try_stmt_2() {
 #[test]
 fn parse_labeled_stmt_lf() {
     let js = "linefeed:0\n0;";
-    let program = Program::Script(vec![
+    let program = Program::script(vec![
         ProgramPart::Statement(Statement::Labeled(LabeledStatement {
             label: "linefeed".to_string(),
             body: Box::new(Statement::Expr(Expression::number("0"))),
         })),
         ProgramPart::Statement(Statement::Expr(Expression::number("0"))),
-    ]);
+    ], SourceLocation::no_source(Position::new(1, 0), Position::new(2, 2)));
     execute(js, program);
 }
 
@@ -332,7 +332,7 @@ fn builder_doc_snippet() {
         }";
     let p = Builder::new().module(false).js(js).build().unwrap();
     for part in p {
-        let expecation = ProgramPart::Statement(Statement::For(ForStatement {
+        let expectation = ProgramPart::Statement(Statement::For(ForStatement {
             init: Some(LoopInit::Variable(vec![VariableDecl::with_value(
                 "i",
                 Expression::number("0"),
@@ -358,7 +358,7 @@ fn builder_doc_snippet() {
                 )),
             )])),
         }));
-        assert_eq!(part.unwrap(), expecation);
+        assert_eq!(part.unwrap(), expectation);
     }
 }
 
@@ -366,7 +366,7 @@ fn builder_doc_snippet() {
 fn parse_doc_example() {
     let js = "function helloWorld() { alert('Hello world'); }";
     let mut p = Parser::new(&js).unwrap();
-    let expectation = Program::Script(vec![ProgramPart::decl(Declaration::Function(Function {
+    let expectation = Program::script(vec![ProgramPart::decl(Declaration::Function(Function {
         id: Some("helloWorld".to_string()),
         params: vec![],
         body: vec![ProgramPart::Statement(Statement::Expr(Expression::call(
@@ -375,7 +375,7 @@ fn parse_doc_example() {
         )))],
         generator: false,
         is_async: false,
-    }))]);
+    }))], SourceLocation::no_source(Position::new(1, 0), Position::new(1, js.len())));
     let program = p.parse().unwrap();
     assert_eq!(program, expectation);
 }
