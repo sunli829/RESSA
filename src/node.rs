@@ -37,7 +37,7 @@ impl Position {
         Self { line: 0, column: 0 }
     }
     pub fn new(line: usize, column: usize) -> Self {
-        Self { line, column, }
+        Self { line, column }
     }
 }
 
@@ -55,7 +55,7 @@ pub struct Program {
 #[derive(PartialEq, Debug, Clone, Copy)]
 pub enum SourceType {
     Script,
-    Module
+    Module,
 }
 
 impl Program {
@@ -71,7 +71,7 @@ impl Program {
         Program {
             source_type: SourceType::Script,
             body: parts,
-            loc
+            loc,
         }
     }
 }
@@ -143,47 +143,49 @@ impl ModuleDecl {
         ModuleDecl::Import(import)
     }
 
-    pub fn import_parts(specifiers: Vec<ImportSpecifier>, source: &str) -> Self {
+    pub fn import_parts(specifiers: Vec<ImportSpecifier>, source: &str, loc: SourceLocation) -> Self {
         ModuleDecl::Import(ModuleImport {
             specifiers,
             source: Literal::string(source),
+            loc,
         })
     }
 
-    pub fn single_import(name: &str, from: &str) -> Self {
-        Self::simple_imports(&[name], from)
+    pub fn single_import(name: &str, from: &str, loc: SourceLocation) -> Self {
+        Self::simple_imports(&[name], from, loc)
     }
 
-    pub fn single_default_import(name: &str, from: &str) -> Self {
+    pub fn single_default_import(name: &str, from: &str, loc: SourceLocation) -> Self {
         let specifiers = vec![ImportSpecifier::default(name)];
         let source = Literal::string(from);
-        ModuleDecl::Import(ModuleImport { specifiers, source })
+        ModuleDecl::Import(ModuleImport::new(specifiers, source, loc))
     }
 
-    pub fn imports_with_default(default: &str, normal: &[&str], from: &str) -> Self {
+    pub fn imports_with_default(default: &str, normal: &[&str], from: &str, loc: SourceLocation) -> Self {
         let mut specifiers = Vec::with_capacity(normal.len() + 1);
         specifiers.push(ImportSpecifier::default(default));
         for name in normal {
             specifiers.push(ImportSpecifier::normal_no_local(name))
         }
         let source = Literal::string(from);
-        ModuleDecl::Import(ModuleImport { specifiers, source })
+        ModuleDecl::Import(ModuleImport::new(specifiers, source, loc))
     }
 
-    pub fn simple_imports(names: &[&str], from: &str) -> Self {
+    pub fn simple_imports(names: &[&str], from: &str, loc: SourceLocation) -> Self {
         let specifiers = names
             .iter()
             .map(|n| ImportSpecifier::normal_no_local(n))
             .collect();
         let source = Literal::string(from);
-        ModuleDecl::Import(ModuleImport { specifiers, source })
+        ModuleDecl::Import(ModuleImport::new(specifiers, source, loc))
     }
 
-    pub fn namespace_import(local: &str, from: &str) -> Self {
-        ModuleDecl::Import(ModuleImport {
-            specifiers: vec![ImportSpecifier::namespace(local)],
-            source: Literal::string(from),
-        })
+    pub fn namespace_import(local: &str, from: &str, loc: SourceLocation) -> Self {
+        ModuleDecl::Import(ModuleImport::new(
+            vec![ImportSpecifier::namespace(local)],
+            Literal::string(from),
+            loc
+        ))
     }
 
     pub fn export(export: ModuleExport) -> Self {
@@ -231,11 +233,12 @@ impl ModuleDecl {
 pub struct ModuleImport {
     pub specifiers: Vec<ImportSpecifier>,
     pub source: Literal,
+    pub loc: SourceLocation,
 }
 
 impl ModuleImport {
-    pub fn new(specifiers: Vec<ImportSpecifier>, source: Literal) -> Self {
-        Self { specifiers, source }
+    pub fn new(specifiers: Vec<ImportSpecifier>, source: Literal, loc: SourceLocation) -> Self {
+        Self { specifiers, source, loc }
     }
 }
 /// The name of the thing being imported

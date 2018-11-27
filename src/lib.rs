@@ -58,14 +58,10 @@ mod error;
 pub mod node;
 
 pub use comment_handler::CommentHandler;
-use node::{
-    Program,
-    ProgramPart,
-    SourceLocation,
-};
 use comment_handler::DefaultCommentHandler;
 use error::Error;
 use node::Position;
+use node::*;
 use std::{collections::HashSet, mem::replace};
 
 /// The current configuration options.
@@ -505,9 +501,15 @@ where
             }
         }
         let program = if self.context.is_module {
-            Program::module(body, SourceLocation::no_source(start, self.current_position))
+            Program::module(
+                body,
+                SourceLocation::no_source(start, self.current_position),
+            )
         } else {
-            Program::script(body, SourceLocation::no_source(start, self.current_position))
+            Program::script(
+                body,
+                SourceLocation::no_source(start, self.current_position),
+            )
         };
         Ok(program)
     }
@@ -631,16 +633,18 @@ where
         if self.context.in_function_body {
             //error
         }
+        let loc_start = self.current_position;
         self.expect_keyword(Keyword::Import)?;
         // if the next toke is a string we are at an import
         // with not specifiers
         if self.look_ahead.is_string() {
             let source = self.parse_module_specifier()?;
             self.consume_semicolon()?;
-            Ok(node::ModuleImport {
-                specifiers: vec![],
+            Ok(node::ModuleImport::new(
+                vec![],
                 source,
-            })
+                SourceLocation::no_source(loc_start, self.current_position),
+            ))
         } else {
             // If we are at an open brace, this is the named
             //variant
@@ -684,7 +688,7 @@ where
             // comes from
             let source = self.parse_module_specifier()?;
             self.consume_semicolon()?;
-            Ok(node::ModuleImport { specifiers, source })
+            Ok(node::ModuleImport::new(specifiers, source, SourceLocation::no_source(loc_start, self.current_position)))
         }
     }
     /// This will handle the named variant of imports
@@ -4143,7 +4147,7 @@ where
                 (index, lines[0])
             } else {
                 let half = current_len >> 1;
-                if lines[half-1].end > item.span.start {
+                if lines[half - 1].end > item.span.start {
                     search(&lines[..half], item, index)
                 } else {
                     search(&lines[half..], item, index + half)
@@ -4288,23 +4292,14 @@ mod test {
     return 'stuff';
 }";
         let item1 = Item {
-            span: Span {
-                start: 9,
-                end: 13,
-            },
+            span: Span { start: 9, end: 13 },
             token: Token::ident("thing"),
         };
-        let position1 = Position {
-            line: 1,
-            column: 9,
-        };
+        let position1 = Position { line: 1, column: 9 };
         let p = Parser::new(js).unwrap();
         assert_eq!(p.get_item_position(&item1), position1);
         let item2 = Item {
-            span: Span {
-                start: 30,
-                end: 36,
-            },
+            span: Span { start: 30, end: 36 },
             token: Token::single_quoted_string("stuff"),
         };
         let position2 = Position {
@@ -4313,16 +4308,10 @@ mod test {
         };
         assert_eq!(p.get_item_position(&item2), position2);
         let item3 = Item {
-            span: Span {
-                start: 39,
-                end: 40,
-            },
+            span: Span { start: 39, end: 40 },
             token: Token::punct("}"),
         };
-        let position3 = Position {
-            line: 3,
-            column: 0,
-        };
+        let position3 = Position { line: 3, column: 0 };
         assert_eq!(p.get_item_position(&item3), position3);
     }
 }
