@@ -4148,10 +4148,10 @@ where
         // way to get that would be to call .iter on the lines property
         // which would perform a linear search, this allows for a binary
         // search
-        fn search(lines: &[Line], item: &Item, index: usize) -> (usize, Line) {
+        fn search(lines: &[Line], item: &Item, index: usize) -> (u32, Line) {
             let current_len = lines.len();
             if current_len == 1 {
-                (index, lines[0])
+                (index as u32, lines[0])
             } else {
                 let half = current_len >> 1;
                 if lines[half - 1].end > item.span.start {
@@ -4162,7 +4162,7 @@ where
             }
         }
         let (idx, line) = search(&self.lines, item, 0);
-        let column = item.span.start.saturating_sub(line.start);
+        let column = item.span.start.saturating_sub(line.start) as u32;
         Position {
             line: idx + 1,
             column,

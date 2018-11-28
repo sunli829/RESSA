@@ -22,8 +22,8 @@ impl SourceLocation {
 #[derive(PartialEq, Debug, Clone, Copy)]
 /// A position in a file
 pub struct Position {
-    pub line: usize,
-    pub column: usize,
+    pub line: u32,
+    pub column: u32,
 }
 
 impl ::std::fmt::Display for Position {
@@ -36,7 +36,7 @@ impl Position {
     pub fn start() -> Self {
         Self { line: 0, column: 0 }
     }
-    pub fn new(line: usize, column: usize) -> Self {
+    pub fn new(line: u32, column: u32) -> Self {
         Self { line, column }
     }
 }

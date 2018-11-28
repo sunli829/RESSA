@@ -278,7 +278,7 @@ fn parse_var_stmt_destructure_rest() {
     let stmt = Statement::Var(vec![decl]);
     let program = Program::script(
         vec![ProgramPart::Statement(stmt)],
-        SourceLocation::no_source(Position::new(1, 0), Position::new(1, js.len())),
+        SourceLocation::no_source(Position::new(1, 0), Position::new(1, js.len() as u32)),
     );
     execute(js, program);
 }
@@ -471,7 +471,7 @@ fn parse_doc_example() {
             generator: false,
             is_async: false,
         }))],
-        SourceLocation::no_source(Position::new(1, 0), Position::new(1, js.len())),
+        SourceLocation::no_source(Position::new(1, 0), Position::new(1, js.len() as u32)),
     );
     let program = p.parse().unwrap();
     assert_eq!(program, expectation);
