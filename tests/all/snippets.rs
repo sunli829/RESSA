@@ -528,18 +528,25 @@ function Thing() {
 #[test]
 fn first_blog_post() {
     let expect = ProgramPart::Decl(Declaration::Function(Function {
-        id: Some(String::from("print")),
-        params: vec![FunctionArg::Pattern(Pattern::Identifier(String::from(
-            "message",
-        )))],
+        id: Some(Identifier::new("print", SourceLocation::no_source(Position::new(1, 9), Position::new(1, 14)))),
+        params: vec![FunctionArg::Pattern(Pattern::Identifier(Identifier::new("message", SourceLocation::no_source(Position::new(1, 15), Position::new(1, 22)))))],
         body: vec![ProgramPart::Statement(Statement::Expr(Expression::Call(
             CallExpression {
                 callee: Box::new(Expression::Member(MemberExpression {
-                    object: Box::new(Expression::Ident(String::from("console"))),
-                    property: Box::new(Expression::Ident(String::from("log"))),
+                    object: Box::new(Expression::Ident(Identifier::new(
+                        "console",
+                        SourceLocation::no_source(Position::new(2, 4), Position::new(2, 11))
+                    ))),
+                    property: Box::new(Expression::Ident(
+                        Identifier::new(
+                            "log",
+                            SourceLocation::no_source(Position::new(2, 12), Position::new(2, 15))
+                        )
+                    )),
                     computed: false,
                 })),
-                arguments: vec![Expression::Ident(String::from("message"))],
+                arguments: vec![Expression::Ident(Identifier::new("message", SourceLocation::no_source(
+                    Position::new(2, 16), Position::new(2, 23))))],
             },
         )))],
         generator: false,
@@ -548,7 +555,8 @@ fn first_blog_post() {
     let js = "function print(message) {
     console.log(message)
 }";
-    execute(js, Program::Script(vec![expect]));
+    let program = Program::script(vec![expect], SourceLocation::no_source(Position::new(1, 0), Position::new(3, 1)));
+    execute(js, program);
 }
 
 #[test]

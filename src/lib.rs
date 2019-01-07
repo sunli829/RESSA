@@ -32,7 +32,7 @@
 //!            generator: false,
 //!            is_async: false,
 //!        }))],
-//!        SourceLocation::no_source(Position::new(1, 0), Position::new(1, js.len())),
+//!        SourceLocation::no_source(Position::new(1, 0), Position::new(1, js.len() as u32)),
 //!    );
 //!    let program = p.parse().unwrap();
 //!    assert_eq!(program, expectation);
@@ -469,7 +469,7 @@ where
     ///         generator: false,
     ///         is_async: false,
     ///     }))],
-    ///     SourceLocation::no_source(Position::new(1, 0), Position::new(1, js.len())),
+    ///     SourceLocation::no_source(Position::new(1, 0), Position::new(1, js.len() as u32)),
     /// );
     /// let program = p.parse().unwrap();
     /// assert_eq!(program, expectation);
