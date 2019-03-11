@@ -1528,7 +1528,7 @@ where
         Ok(ret)
     }
 
-    fn parse_expression(&mut self) -> Res<Expr> {
+    pub fn parse_expression(&mut self) -> Res<Expr> {
         debug!("parse_expression");
         let (prev_bind, prev_assign, prev_first) = self.isolate_cover_grammar();
         let ret = self.parse_assignment_expr()?;
