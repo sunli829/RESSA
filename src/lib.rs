@@ -2534,11 +2534,11 @@ where
             let id = self.scanner.string_for(&start.span).unwrap_or(String::new());
             let _ = self.next_item()?;
             let computed = self.at_punct(Punct::OpenBracket);
-            let is_async = self.context.has_line_term
-                && id == "async"
+            let is_async = /*self.context.has_line_term
+                && */id == "async"/*
                 && !self.at_punct(Punct::Colon)
                 && !self.at_punct(Punct::Asterisk)
-                && !self.at_punct(Punct::Comma);
+                && !self.at_punct(Punct::Comma);*/
             let key = if is_async {
                 self.parse_object_property_key()?
             } else {
