@@ -2538,7 +2538,7 @@ where
                 && */id == "async"/*
                 && !self.at_punct(Punct::Colon)
                 && !self.at_punct(Punct::Asterisk)
-                && !self.at_punct(Punct::Comma);*/
+                && !self.at_punct(Punct::Comma)*/;
             let key = if is_async {
                 self.parse_object_property_key()?
             } else {
